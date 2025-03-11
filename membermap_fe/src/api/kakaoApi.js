@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const KAKAO_API_KEY = process.env.REACT_APP_KAKAO_REST_API_KEY; // 복사한 키 입력
+const KAKAO_API_KEY = process.env.REACT_APP_KAKAO_REST_API_KEY;
 
 
 /**
@@ -9,25 +9,51 @@ const KAKAO_API_KEY = process.env.REACT_APP_KAKAO_REST_API_KEY; // 복사한 키
  * @returns {Promise<{lat: number, lng: number}>}
  */
 export const getCoordsFromAddress = async (address) => {
-  try {
-    const response = await axios.get("https://dapi.kakao.com/v2/local/search/address.json", {
-      headers: {
-        Authorization: `KakaoAK ${KAKAO_API_KEY}`,
-      },
-      params: {
-        query: address,
-      },
-    });
-
-    const documents = response.data.documents;
-    if (documents.length > 0) {
-      const { x, y } = documents[0]; // x: 경도(lng), y: 위도(lat)
-      return { lat: parseFloat(y), lng: parseFloat(x) };
-    } else {
-      throw new Error("주소 결과 없음");
+    try {
+      const response = await axios.get(
+        "https://dapi.kakao.com/v2/local/search/address.json",
+        {
+          headers: {
+            Authorization: `KakaoAK ${KAKAO_API_KEY}`,
+          },
+          params: { query: address },
+        }
+      );
+      const documents = response.data.documents;
+      if (documents.length > 0) {
+        const { x, y } = documents[0]; // x: 경도(lng), y: 위도(lat)
+        return { lat: parseFloat(y), lng: parseFloat(x) };
+      } else {
+        throw new Error("주소 결과 없음");
+      }
+    } catch (error) {
+      console.error("주소 변환 에러:", error);
+      return null;
     }
-  } catch (error) {
-    console.error("주소 변환 에러:", error);
-    return null;
-  }
-};
+  };
+  
+ 
+  //주소 → 좌표 → 시군구명 추출
+  export const getRegionFromCoords = async (lat, lng) => {
+    try {
+      const response = await axios.get(
+        "https://dapi.kakao.com/v2/local/geo/coord2regioncode.json",
+        {
+          headers: {
+            Authorization: `KakaoAK ${KAKAO_API_KEY}`,
+          },
+          params: { x: lng, y: lat }, // ⚠️ lng가 x, lat가 y
+        }
+      );
+      const documents = response.data.documents;
+      if (documents.length > 0) {
+        const { region_1depth_name, region_2depth_name } = documents[0];
+        return region_2depth_name;
+      } else {
+        throw new Error("시군구 정보 없음");
+      }
+    } catch (error) {
+      console.error("좌표 → 지역 변환 에러:", error);
+      return null;
+    }
+  };

@@ -1,51 +1,42 @@
-import React, { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import { getCoordsFromAddress } from "../api/kakaoApi";
+// MapPage.jsx
+import { useEffect, useState } from "react";
+import MemberMap from "../components/Map/MemberMap";
+import { getCoordsFromAddress, getRegionFromCoords } from "../api/kakaoApi";
 import members from "../data/members";
-import L from "leaflet";
-
-// 마커 기본 아이콘 설정
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
-});
 
 const MapPage = () => {
-  const [memberMarkers, setMemberMarkers] = useState([]);
+  const [regionCounts, setRegionCounts] = useState({});
 
   useEffect(() => {
-    const fetchAllCoords = async () => {
-      const results = await Promise.all(
-        members.map(async (member) => {
-          const coords = await getCoordsFromAddress(member.address);
-          return coords
-            ? { id: member.id, name: member.name, ...coords }
-            : null;
-        })
-      );
-      setMemberMarkers(results.filter((m) => m !== null));
+    const fetchData = async () => {
+      const regionCountMap = {};
+
+      for (const member of members) {
+        const coords = await getCoordsFromAddress(member.address);
+        const region = coords && await getRegionFromCoords(coords.lat, coords.lng); // 예: "고양시 덕양구"
+        if (coords && region) {
+          // 🔥 GeoJSON에서 매칭되는 형태로 유지해야 함 (ex: "고양시 덕양구", "포항시 북구")
+          const cleanedRegion = region.trim(); 
+
+          if (!regionCountMap[cleanedRegion]) {
+            regionCountMap[cleanedRegion] = { count: 1, coords };
+          } else {
+            regionCountMap[cleanedRegion].count += 1;
+          }
+        }
+      }
+
+      setRegionCounts(regionCountMap);
+      console.log("✅ 최종 regionCounts:", regionCountMap);
     };
 
-    fetchAllCoords();
+    fetchData();
   }, []);
 
   return (
-    <div style={{ height: "80vh" }}>
-      <MapContainer center={[36.5, 127.5]} zoom={7} style={{ height: "100%" }}>
-        <TileLayer
-          attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        {memberMarkers.map((member) => (
-          <Marker key={member.id} position={[member.lat, member.lng]}>
-            <Popup>{member.name} 님의 주소 기반 위치입니다.</Popup>
-          </Marker>
-        ))}
-      </MapContainer>
+    <div>
+      <h2>🗺️ 지역별 회원 밀도</h2>
+      <MemberMap regionCounts={regionCounts} />
     </div>
   );
 };

@@ -66,7 +66,7 @@
 
 | 분류        | 사용 기술                                  |
 |-------------|---------------------------------------------|
-| **Backend** | Spring Boot, JPA, Spring Security           |
+| **Backend** | Spring Boot, JPA         |
 | **Frontend**| React                                        |
 | **Database**| OracleDB                                     |
 | **AI**      | Hugging Face API (BERT)                      |

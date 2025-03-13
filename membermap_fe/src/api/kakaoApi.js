@@ -36,24 +36,20 @@ export const getCoordsFromAddress = async (address) => {
   //주소 → 좌표 → 시군구명 추출
   export const getRegionFromCoords = async (lat, lng) => {
     try {
-      const response = await axios.get(
-        "https://dapi.kakao.com/v2/local/geo/coord2regioncode.json",
+      const res = await axios.get(
+        `https://dapi.kakao.com/v2/local/geo/coord2regioncode.json?x=${lng}&y=${lat}`,
         {
           headers: {
-            Authorization: `KakaoAK ${KAKAO_API_KEY}`,
+            Authorization: `KakaoAK ${process.env.REACT_APP_KAKAO_REST_API_KEY}`,
           },
-          params: { x: lng, y: lat }, // ⚠️ lng가 x, lat가 y
         }
       );
-      const documents = response.data.documents;
-      if (documents.length > 0) {
-        const { region_1depth_name, region_2depth_name } = documents[0];
-        return region_2depth_name;
-      } else {
-        throw new Error("시군구 정보 없음");
-      }
-    } catch (error) {
-      console.error("좌표 → 지역 변환 에러:", error);
+  
+      const data = res.data.documents[0];
+      // full name 조합: region_1depth_name + region_2depth_name
+      return `${data.region_1depth_name} ${data.region_2depth_name}`; // 예: 서울특별시 중구
+    } catch (e) {
+      console.error("주소로부터 지역명 가져오기 실패", e);
       return null;
     }
   };

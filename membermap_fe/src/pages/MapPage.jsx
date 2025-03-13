@@ -7,17 +7,22 @@ import members from "../data/members";
 const MapPage = () => {
   const [regionCounts, setRegionCounts] = useState({});
 
+  const normalizeRegionName = (fullName) => {
+    const match = fullName.match(/([가-힣]+[구군시])$/);
+    return match ? match[1] : fullName;
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       const regionCountMap = {};
-
+    
       for (const member of members) {
         const coords = await getCoordsFromAddress(member.address);
         const region = coords && await getRegionFromCoords(coords.lat, coords.lng); // 예: "고양시 덕양구"
+        
         if (coords && region) {
-          // 🔥 GeoJSON에서 매칭되는 형태로 유지해야 함 (ex: "고양시 덕양구", "포항시 북구")
-          const cleanedRegion = region.trim(); 
-
+          const cleanedRegion = region;
+    
           if (!regionCountMap[cleanedRegion]) {
             regionCountMap[cleanedRegion] = { count: 1, coords };
           } else {
@@ -25,10 +30,14 @@ const MapPage = () => {
           }
         }
       }
-
+    
       setRegionCounts(regionCountMap);
       console.log("✅ 최종 regionCounts:", regionCountMap);
+      Object.entries(regionCountMap).forEach(([region, data]) => {
+        console.log(`📦 ${region}: ${data.count}명`);
+      });
     };
+    
 
     fetchData();
   }, []);

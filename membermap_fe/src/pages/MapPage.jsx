@@ -3,26 +3,22 @@ import { useEffect, useState } from "react";
 import MemberMap from "../components/Map/MemberMap";
 import { getCoordsFromAddress, getRegionFromCoords } from "../api/kakaoApi";
 import members from "../data/members";
+import { normalizeRegionName } from '../utils/regionUtils';  // ✅ 유틸 함수 사용
 
 const MapPage = () => {
   const [regionCounts, setRegionCounts] = useState({});
 
-  const normalizeRegionName = (fullName) => {
-    const match = fullName.match(/([가-힣]+[구군시])$/);
-    return match ? match[1] : fullName;
-  };
-
   useEffect(() => {
     const fetchData = async () => {
       const regionCountMap = {};
-    
+
       for (const member of members) {
         const coords = await getCoordsFromAddress(member.address);
-        const region = coords && await getRegionFromCoords(coords.lat, coords.lng); // 예: "고양시 덕양구"
-        
+        const region = coords && await getRegionFromCoords(coords.lat, coords.lng);
         if (coords && region) {
-          const cleanedRegion = region;
-    
+          const cleanedRegion = normalizeRegionName(region);  // ✅ 핵심
+          console.log("📌 cleanedRegion :", cleanedRegion);
+
           if (!regionCountMap[cleanedRegion]) {
             regionCountMap[cleanedRegion] = { count: 1, coords };
           } else {
@@ -30,14 +26,10 @@ const MapPage = () => {
           }
         }
       }
-    
+
       setRegionCounts(regionCountMap);
       console.log("✅ 최종 regionCounts:", regionCountMap);
-      Object.entries(regionCountMap).forEach(([region, data]) => {
-        console.log(`📦 ${region}: ${data.count}명`);
-      });
     };
-    
 
     fetchData();
   }, []);
